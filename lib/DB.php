@@ -1,5 +1,7 @@
 <?php
 
+namespace lib;
+
 class DB
 {
     protected static $instance   = null;    // 类的实例

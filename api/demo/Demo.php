@@ -6,12 +6,16 @@
  * Time: 19:56
  */
 
+use service\demo\DemoService;
+use lib\Base;
+use lib\Request;
+
 class Demo extends Base
 {
-    public function index($request = [])
+    public function controller(Request $request)
     {
         return $this->success([
-            'demo' => 'it is demo...'
+            'demo' => (new DemoService())->getModel()
         ]);
     }
 }

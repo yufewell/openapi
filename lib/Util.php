@@ -6,6 +6,8 @@
  * Time: 16:52
  */
 
+namespace lib;
+
 class Util
 {
     private static $secretKey = '';

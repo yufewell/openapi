@@ -1,41 +1,37 @@
 <?php
+try {
+    define('START_TIME_MS', microtime(true) * 1000);
+    define('APP_PATH', dirname(__FILE__) . '/../');
 
-define('START_TIME_MS', intval(microtime(true) * 1000));
-define('APPLICATION_PATH', dirname(__FILE__) . '/../');
+    require APP_PATH . 'lib/function.php';
 
-//require APPLICATION_PATH . 'lib/Log.php';
-require APPLICATION_PATH . 'lib/Function.php';
+    spl_autoload_register('autoload');
 
-spl_autoload_register('autoload');
+    $uriArr = explode('/', trim(substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], '?')), '/'));
 
-$params = get_params();
+    if (empty($uriArr[0]) || empty($uriArr[1])) {
+        header('HTTP/1.1 404 Not Found');
+        lib\Log::warning('request error', $_REQUEST);
+        die;
+    }
 
-if (empty($params['method'])) {
-	header('HTTP/1.1 404 Not Found');
-	Log::warning('request method error', $params);
-	die;
+    $class = ucfirst($uriArr[1]);
+
+    $classFile = APP_PATH . 'api/' . $uriArr[0] . '/' . $class . '.php';
+
+    if (!file_exists($classFile)) {
+        header('HTTP/1.1 404 Not Found');
+        lib\Log::warning('api not found', $_REQUEST);
+        die;
+    }
+
+    require $classFile;
+
+    (new $class())->controller(new lib\Request());
+
+} catch (Exception $exception) {
+    header('HTTP/1.1 500 Service Error');
+    lib\Log::warning($exception->getMessage() . ', File: ' . $exception->getFile() . ', Line: ' . $exception->getLine(), $_REQUEST);
+    die;
 }
-
-$class = ucfirst(strtolower($params['method']));
-
-$classFile = APPLICATION_PATH . 'api/' . $class . '.php';
-
-if (! file_exists($classFile)) {
-	header('HTTP/1.1 404 Not Found');
-	Log::warning('request api error', $params);
-	die;
-}
-
-//require APPLICATION_PATH . 'lib/Base.php';
-//require APPLICATION_PATH . 'lib/ErrorHandler.php';
-//require APPLICATION_PATH . 'lib/DB.php';
-
-set_error_handler('ErrorHandler::userErrorHandler');
-set_exception_handler('ErrorHandler::exceptionHandler');
-register_shutdown_function('ErrorHandler::shutdownHandler');
-
-require $classFile;
-
-if ((new $class())->index($params)) {
-    Log::info('request_log', $params);
-}
+lib\Log::info('request log', $_REQUEST);

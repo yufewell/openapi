@@ -1,5 +1,7 @@
 <?php
 
+namespace lib;
+
 class Base
 {
     /**
@@ -90,7 +92,7 @@ class Base
 
         header('content-type:text/html');
 
-        require APPLICATION_PATH . 'view/'.$template.'.php';
+        require APP_PATH . 'view/'.$template.'.php';
 
         return true;
     }

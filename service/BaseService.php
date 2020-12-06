@@ -6,6 +6,8 @@
  * Time: 16:28
  */
 
+namespace service;
+
 class BaseService
 {
     protected $msg = '';

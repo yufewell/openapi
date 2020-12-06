@@ -1,4 +1,7 @@
 <?php
+
+namespace lib;
+
 class Log
 {
     /**
@@ -29,7 +32,7 @@ class Log
             $text .= ', data:' . $dataStr;
         }
 
-        $timeCost = 'timeCost:'. (intval(microtime(true) * 1000) - START_TIME_MS) . 'ms';
+        $timeCost = sprintf("timeCost:%.4fms", microtime(true) * 1000 - START_TIME_MS);
         $ip = 'ip:'. (empty($_SERVER['REMOTE_ADDR']) ? '' : $_SERVER['REMOTE_ADDR']);
         $uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
         $client = (empty($_SERVER['HTTP_PLATFORM']) ? '' : $_SERVER['HTTP_PLATFORM']);
@@ -62,7 +65,7 @@ class Log
             $ext = 'log.wf.';
         }
 
-        return APPLICATION_PATH . 'log' . date('/Y-m/') . $ext . date('YmdH');
+        return APP_PATH . 'log' . date('/Y-m/') . $ext . date('YmdH');
     }
 
     /**
