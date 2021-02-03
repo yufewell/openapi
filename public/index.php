@@ -7,7 +7,11 @@ try {
 
     spl_autoload_register('autoload');
 
-    $uriArr = explode('/', trim(substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], '?')), '/'));
+    if (strpos($_SERVER['REQUEST_URI'], '?') === false) {
+        $uriArr = explode('/', trim(substr($_SERVER['REQUEST_URI'], 0), '/'));
+    } else {
+        $uriArr = explode('/', trim(substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], '?')), '/'));
+    }
 
     if (empty($uriArr[0]) || empty($uriArr[1])) {
         header('HTTP/1.1 404 Not Found');
@@ -27,7 +31,7 @@ try {
 
     require $classFile;
 
-    (new $class())->controller(new lib\Request());
+    (new $class())->controller();
 
 } catch (Exception $exception) {
     header('HTTP/1.1 500 Service Error');
