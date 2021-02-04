@@ -42,9 +42,10 @@ try {
 
     (new $class)->controller();
 
+//    lib\Log::info('request log', $_REQUEST);
+
 } catch (Exception $exception) {
     header('HTTP/1.1 500 Service Error');
     lib\Log::warning($exception->getMessage() . ', File: ' . $exception->getFile() . ', Line: ' . $exception->getLine(), $_REQUEST);
     die;
 }
-lib\Log::info('request log', $_REQUEST);

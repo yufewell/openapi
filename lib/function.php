@@ -39,10 +39,7 @@ if (! function_exists('config')) {
         }
 
         if ($key) {
-            if (!isset($config[$key])) {
-                throw new Exception("config {$key} not found");
-            }
-            return $config[$key];
+            return $config[$key] ?? null;
         }
 
         return $config;

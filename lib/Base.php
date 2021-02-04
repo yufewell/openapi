@@ -104,6 +104,8 @@ class Base
      * @return bool
      */
     protected function renderJson($data = []) {
+        Log::info('request log', $_REQUEST);
+
         header('content-type: application/json');
 
         echo json_encode($data);

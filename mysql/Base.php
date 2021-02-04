@@ -4,13 +4,21 @@
 namespace mysql;
 
 use PDO;
+use Exception;
 use lib\DB;
 use lib\Log;
 
 abstract class Base
 {
+    /**
+     * @var static|null
+     */
     protected static $instance   = null;    // 类的实例
-    protected static $connection = null;    // 数据库连接实例
+
+    /**
+     * @var PDO|null
+     */
+    protected $connection = null;    // 数据库连接实例
     protected static $table      = '';
     protected static $db_prefix  = '';
     protected $fields            = '*';
@@ -20,29 +28,32 @@ abstract class Base
     protected $sql               = '';
 
     /**
-     * 构造方法
-     * 获取配置, 连接数据库, 并保存实例
-     * 设置表前缀
+     * Base constructor.
+     * @throws Exception
      */
     public function __construct() {
-        self::$connection = self::connect();
+        $this->connect();
     }
 
     /**
      * 返回数据库连接对象
      *
-     * @param $config
-     * @return null|PDO
+     * @param array $config
+     * @return PDO|null
+     * @throws Exception
      */
-    public static function connect($config = []) {
-        if (empty($config)) {
-            $config = get_config();
-
-            $config = $config['mysql'];
+    public function connect($config = []) {
+        if ($this->connection !== null) {
+            return $this->connection;
         }
 
-        if (self::$connection !== null) {
-            return self::$connection;
+        if (empty($config)) {
+            $config = config('mysql');
+            if (empty($config)) {
+                throw new Exception('connect to mysql failed, config empty');
+            }
+
+//            $config = $config['mysql'];
         }
 
         $username = $config['username'];
@@ -51,36 +62,23 @@ abstract class Base
         $db = $config['database'];
         $port = $config['port'];
 
-        self::$connection = new PDO("mysql:dbname=$db;host=$host;port=$port", $username, $password,
+        $this->connection = new PDO("mysql:dbname=$db;host=$host;port=$port", $username, $password,
             [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'utf8mb4'"]);
 
-        if (!self::$connection) {
-            Log::write('数据库连接失败', $config);
+        if (!$this->connection) {
+//            Log::warning('connect to mysql failed, connect error', $config);
+            throw new Exception('connect to mysql failed, connect error, config: '.json_encode($config));
         }
-        return self::$connection;
-    }
 
-    /**
-     * 设置table, 获取实例
-     *
-     * @param string $table
-     * @return DB|null
-     */
-    public static function table($table = '') {
-        self::$table = self::$db_prefix . strtolower($table);
-
-        if (self::$instance === null)
-            self::$instance = new static();
-
-        return self::$instance;
+        return $this->connection;
     }
 
     /**
      * 获取instance
      *
-     * @return DB|null
+     * @return static|null
      */
-    public static function getInstance() {
+    public static function instance() {
         if (self::$instance === null)
             self::$instance = new static();
 
@@ -92,17 +90,19 @@ abstract class Base
      *
      * @param $sql
      * @return bool
+     * @throws Exception
      */
     private function query($sql){
         if (defined('APP_DEBUG') && APP_DEBUG === true) {
-            Log::write($sql, [], 'SQL');
+            Log::info('SQL: '. $sql);
         }
 
-        $stmt = self::$connection->prepare($sql);
+        $stmt = $this->connection->prepare($sql);
         $rst = $stmt->execute();
 
         if (!$rst) {
-            Log::warning('query error, SQL:'.$sql, $stmt->errorInfo());
+//            Log::warning('query error, SQL:'.$sql, $stmt->errorInfo());
+            throw new Exception('query error, SQL: '.$sql . ', PDO error msg: ' . $stmt->errorInfo());
         }
         return $rst;
     }
@@ -114,11 +114,11 @@ abstract class Base
      * @return array|bool
      */
     public function getAll($sql) {
-        $stmt = self::$connection->prepare($sql);
-        $rst = $stmt->execute();
-        if (!$rst) {
-            Log::warning('getAll error, SQL:'.$sql, $stmt->errorInfo());
-            return $rst;
+        $stmt = $this->connection->prepare($sql);
+//        $rst = $stmt->execute();
+        if (!$stmt->execute()) {
+            throw new Exception('query error, SQL: '.$sql . ', PDO error msg: ' . $stmt->errorInfo());
+//            return $rst;
         }
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -130,11 +130,11 @@ abstract class Base
      * @return bool|mixed
      */
     public function getOne($sql) {
-        $stmt = self::$connection->prepare($sql);
+        $stmt = $this->connection->prepare($sql);
         $rst = $stmt->execute();
-        if (!$rst) {
-            Log::warning('getOne error, SQL:'.$sql, $stmt->errorInfo());
-            return $rst;
+        if (!$stmt->execute()) {
+            throw new Exception('query error, SQL: '.$sql . ', PDO error msg: ' . $stmt->errorInfo());
+//            return $rst;
         }
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -173,7 +173,7 @@ abstract class Base
     /**
      * 查询构造方法
      */
-    public function select() {
+    public function all() {
         $this->_make_select_sql();
         $data = $this->getAll($this->sql);
         if (empty($data)) {
@@ -261,14 +261,14 @@ abstract class Base
      * 设置limit条件
      *
      * @param $start
-     * @param $pagesize
+     * @param $pageSize
      * @return null|static
      */
-    public function limit($start, $pagesize = 0) {
-        if (empty($pagesize)) {
+    public function limit($start, $pageSize = 0) {
+        if (empty($pageSize)) {
             $this->limit = $start;
         } else {
-            $this->limit = intval($start) . ',' . intval($pagesize);
+            $this->limit = intval($start) . ',' . intval($pageSize);
         }
 
         return self::$instance;
@@ -291,7 +291,7 @@ abstract class Base
         if (!$this->query($sql)) {
             return false;
         }
-        return self::$connection->lastInsertId();
+        return $this->connection->lastInsertId();
     }
 
     /**
@@ -373,49 +373,14 @@ abstract class Base
      *
      * @return bool|mixed
      */
-    public function uuid() {
-        $sql = 'select uuid() as uuid';
-        $data = $this->getOne($sql);
-        if (!$data) {
-            // add_error_log('获取uuid失败');
-            return false;
-        }
-        return str_replace('-', '', $data['uuid']);
-    }
+//    public function uuid() {
+//        $sql = 'select uuid() as uuid';
+//        $data = $this->getOne($sql);
+//        if (!$data) {
+//            // add_error_log('获取uuid失败');
+//            return false;
+//        }
+//        return str_replace('-', '', $data['uuid']);
+//    }
 
-    /**
-     * beginTrans
-     *
-     * @return bool
-     */
-    public static function beginTrans() {
-        if (self::$connection === null)
-            self::$connection = self::getConnection();
-
-        return self::$connection->beginTransaction();
-    }
-
-    /**
-     * rollBack
-     *
-     * @return bool
-     */
-    public static function rollBack() {
-        if (self::$connection === null)
-            self::$connection = self::getConnection();
-
-        return self::$connection->rollBack();
-    }
-
-    /**
-     * commit
-     *
-     * @return bool
-     */
-    public static function commit() {
-        if (self::$connection === null)
-            self::$connection = self::getConnection();
-
-        return self::$connection->commit();
-    }
 }
