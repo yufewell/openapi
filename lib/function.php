@@ -23,11 +23,29 @@ if (! function_exists('autoload')) {
 }
 
 
-if (! function_exists('get_config')) {
+if (! function_exists('config')) {
 
-    function get_config()
+    function config($key = '', $value = null)
     {
-        return require APP_PATH . 'config.php';
+        static $config;
+
+        if (empty($config)) {
+            $config = require_once APP_PATH . 'config.php';
+        }
+
+        if ($value) {
+            $config[$key] = $value;
+            return true;
+        }
+
+        if ($key) {
+            if (!isset($config[$key])) {
+                throw new Exception("config {$key} not found");
+            }
+            return $config[$key];
+        }
+
+        return $config;
     }
 }
 

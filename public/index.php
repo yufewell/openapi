@@ -7,6 +7,10 @@ try {
 
     spl_autoload_register('autoload');
 
+    register_shutdown_function('\lib\ErrorHandler::shutdownHandler');
+    set_error_handler('\lib\ErrorHandler::userErrorHandler');
+//    set_exception_handler('\lib\ErrorHandler::exceptionHandler');
+
     if (strpos($_SERVER['REQUEST_URI'], '?') === false) {
         $uriArr = explode('/', trim(substr($_SERVER['REQUEST_URI'], 0), '/'));
     } else {
@@ -19,19 +23,24 @@ try {
         die;
     }
 
-    $class = ucfirst($uriArr[1]);
+    $class = '\api\\' . $uriArr[0] . '\\' . ucfirst($uriArr[1]);
 
-    $classFile = APP_PATH . 'api/' . $uriArr[0] . '/' . $class . '.php';
+//    require APP_PATH . 'api/' . $uriArr[0] . '/' . $class . '.php';
 
-    if (!file_exists($classFile)) {
-        header('HTTP/1.1 404 Not Found');
-        lib\Log::warning('api not found', $_REQUEST);
-        die;
-    }
+//    if (!file_exists($classFile)) {
+//        header('HTTP/1.1 404 Not Found');
+//        lib\Log::warning('api not found', $_REQUEST);
+//        die;
+//    }
+//
+//    var_dump(config());
+//    config('aaa', 'bbb');
+//    var_dump(config('aaa'));
+//    die;
+//
+//    require $classFile;
 
-    require $classFile;
-
-    (new $class())->controller();
+    (new $class)->controller();
 
 } catch (Exception $exception) {
     header('HTTP/1.1 500 Service Error');

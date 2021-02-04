@@ -27,17 +27,17 @@ class Log
         }
         
         $dataStr = rtrim($dataStr, ', ');
-        $text = 'msg:' .$msg;
+        $text = 'msg: ' .$msg;
         if (!empty($dataStr)) {
-            $text .= ', data:' . $dataStr;
+            $text .= ', data: ' . $dataStr;
         }
 
         $timeCost = sprintf("timeCost:%.4fms", microtime(true) * 1000 - START_TIME_MS);
-        $ip = 'ip:'. (empty($_SERVER['REMOTE_ADDR']) ? '' : $_SERVER['REMOTE_ADDR']);
+        $ip = 'ip: '. (empty($_SERVER['REMOTE_ADDR']) ? '' : $_SERVER['REMOTE_ADDR']);
         $uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
         $client = (empty($_SERVER['HTTP_PLATFORM']) ? '' : $_SERVER['HTTP_PLATFORM']);
 
-        return self::writeFileLog($destination, "{$level}:[{$now}] uri:" .$uri. " client:".$client
+        return self::writeFileLog($destination, "{$now} uri: " .$uri. " client: ".$client
             ." {$text} {$ip} {$timeCost}\r\n");
     }
 
@@ -59,13 +59,13 @@ class Log
      * @return string
      */
     private static function getLogFile($level) {
-        $ext = 'log.info.';
+        $ext = '.log';
 
         if ($level === 'WARN') {
-            $ext = 'log.wf.';
+            $ext = '.wf.log';
         }
 
-        return APP_PATH . 'log' . date('/Y-m/') . $ext . date('YmdH');
+        return APP_PATH . 'log/' . date('/Y-m/') . date('dH') . $ext;
     }
 
     /**

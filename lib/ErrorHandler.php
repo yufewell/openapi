@@ -1,4 +1,7 @@
 <?php
+
+namespace lib;
+
 /**
  * 错误处理类
  */
@@ -8,11 +11,11 @@ class ErrorHandler
      * 自定义错误处理
      *
      * @param $errno
-     * @param $errstr
-     * @param $errfile
-     * @param $errline
+     * @param $message
+     * @param $file
+     * @param $line
      */
-    public static function userErrorHandler($errno, $errstr, $errfile, $errline) {
+    public static function userErrorHandler($errno, $message, $file, $line) {
         switch ($errno) {
             case E_ERROR:               $level = "Error";                  break;
             case E_WARNING:             $level = "Warning";                break;
@@ -27,13 +30,14 @@ class ErrorHandler
             case E_USER_NOTICE:         $level = "User Notice";            break;
             case E_STRICT:              $level = "Strict Notice";          break;
             case E_RECOVERABLE_ERROR:   $level = "Recoverable Error";      break;
-            default:                    $level = "Unknown error ($errno)"; break; 
+            default:                    $level = "Unknown error ($errno)"; break;
         }
-        $errorStr = "$errstr ".$errfile." 第 $errline 行";
+        $errorStr = "$level, $message,file:".$file.",line:{$line}";
         
         header('HTTP/1.1 500 Internal Server Error');
 
-        Log::warning($level.$errorStr, $_REQUEST);
+        Log::warning($errorStr, $_REQUEST);
+        die;
     }
 
     /**
@@ -49,7 +53,7 @@ class ErrorHandler
             case E_COMPILE_ERROR:
             case E_USER_ERROR:
                 self::userErrorHandler($e['type'],$e['message'],$e['file'],$e['line']);
-                break;         
+                break;
         }
     }
 
